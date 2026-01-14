@@ -272,11 +272,27 @@
                         </button>
                     </div>
                     <div class="card">
-                        <h3><i class="fas fa-database"></i> ข้อมูล</h3>
-                        <p class="info-text">User ID: <code id="userIdDisplay"></code></p>
-                        <button id="exportAllBtn" class="btn-small">
-                            <i class="fas fa-file-export"></i> Export ทั้งหมด
-                        </button>
+                        <h3><i class="fas fa-sync"></i> ซิงค์ข้อมูลหลาย Devices</h3>
+                        <p class="info-text">ใช้ User ID เดียวกันเพื่อเข้าถึงข้อมูลบนหลาย devices</p>
+                        <div class="user-id-section">
+                            <label>User ID ปัจจุบัน:</label>
+                            <div class="user-id-box">
+                                <code id="userIdDisplay"></code>
+                                <button id="copyUserIdBtn" class="btn-icon" title="คัดลอก">
+                                    <i class="fas fa-copy"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="sync-actions">
+                            <button id="setUserIdBtn" class="btn-small btn-secondary">
+                                <i class="fas fa-key"></i> ใช้ User ID อื่น
+                            </button>
+                            <button id="exportAllBtn" class="btn-small">
+                                <i class="fas fa-file-export"></i> Export ทั้งหมด
+                            </button>
+                        </div>
+                        <p class="help-text"><i class="fas fa-info-circle"></i> คัดลอก User ID จาก device หลัก
+                            แล้วนำไปใช้ใน device อื่น</p>
                     </div>
                 </div>
             </section>
