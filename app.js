@@ -199,6 +199,10 @@ function setupEventListeners() {
     // Export all
     $('#exportAllBtn').addEventListener('click', exportAllData);
 
+    // Multi-device sync
+    $('#copyUserIdBtn').addEventListener('click', copyUserId);
+    $('#setUserIdBtn').addEventListener('click', setCustomUserId);
+
     // Close modals on backdrop click
     $$('.modal').forEach(function (modal) {
         modal.addEventListener('click', function (e) {
@@ -1085,6 +1089,44 @@ function exportAllData() {
     downloadFile(jsonContent, 'expense_tracker_backup_' + Date.now() + '.json', 'application/json');
     showToast('ส่งออกข้อมูลทั้งหมดสำเร็จ!');
 }
+
+function copyUserId() {
+    navigator.clipboard.writeText(userId).then(function () {
+        showToast('คัดลอก User ID สำเร็จ!');
+    }).catch(function () {
+        // Fallback for older browsers
+        const textArea = document.createElement('textarea');
+        textArea.value = userId;
+        document.body.appendChild(textArea);
+        textArea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textArea);
+        showToast('คัดลอก User ID สำเร็จ!');
+    });
+}
+
+function setCustomUserId() {
+    const newUserId = prompt('กรอก User ID ที่ต้องการใช้:\n\n(คัดลอกจาก device หลักแล้ววางที่นี่)', '');
+
+    if (newUserId === null) return; // User cancelled
+
+    const trimmedId = newUserId.trim();
+    if (!trimmedId) {
+        showToast('กรุณากรอก User ID');
+        return;
+    }
+
+    if (trimmedId === userId) {
+        showToast('User ID นี้ใช้งานอยู่แล้ว');
+        return;
+    }
+
+    if (confirm('เปลี่ยนเป็น User ID: ' + trimmedId + '?\n\nหน้าเว็บจะโหลดใหม่เพื่อดึงข้อมูลจาก ID นี้')) {
+        localStorage.setItem('userId', trimmedId);
+        location.reload();
+    }
+}
+
 
 function downloadFile(content, filename, mimeType) {
     const blob = new Blob(['\ufeff' + content], { type: mimeType });
