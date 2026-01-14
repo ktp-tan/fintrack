@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="th">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Expense Tracker Pro</title>
+    <meta name="description" content="จัดการรายรับ-รายจ่าย อย่างมืออาชีพ">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Firebase SDKs (Compat version for non-module) -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-database-compat.js"></script>
+    <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+    <div class="background-blobs">
+        <div class="blob blob-1"></div>
+        <div class="blob blob-2"></div>
+        <div class="blob blob-3"></div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="toast"></div>
+
+    <div class="app-container">
+        <!-- Sidebar Navigation -->
+        <nav class="sidebar">
+            <div class="sidebar-header">
+                <div class="logo">
+                    <i class="fas fa-wallet"></i>
+                    <span>FinTrack</span>
+                </div>
+            </div>
+            <ul class="nav-menu">
+                <li class="nav-item active" data-tab="dashboard">
+                    <i class="fas fa-chart-pie"></i>
+                    <span>Dashboard</span>
+                </li>
+                <li class="nav-item" data-tab="transactions">
+                    <i class="fas fa-list"></i>
+                    <span>รายการ</span>
+                </li>
+                <li class="nav-item" data-tab="budget">
+                    <i class="fas fa-piggy-bank"></i>
+                    <span>งบประมาณ</span>
+                </li>
+                <li class="nav-item" data-tab="reports">
+                    <i class="fas fa-chart-bar"></i>
+                    <span>รายงาน</span>
+                </li>
+                <li class="nav-item" data-tab="settings">
+                    <i class="fas fa-cog"></i>
+                    <span>ตั้งค่า</span>
+                </li>
+            </ul>
+            <div class="sidebar-footer">
+                <button id="darkModeToggle" class="theme-toggle">
+                    <i class="fas fa-moon"></i>
+                    <span>Dark Mode</span>
+                </button>
+            </div>
+        </nav>
+
+        <!-- Mobile Bottom Navigation -->
+        <nav class="mobile-nav">
+            <div class="mobile-nav-item active" data-tab="dashboard">
+                <i class="fas fa-chart-pie"></i>
+                <span>Dashboard</span>
+            </div>
+            <div class="mobile-nav-item" data-tab="transactions">
+                <i class="fas fa-list"></i>
+                <span>รายการ</span>
+            </div>
+            <div class="mobile-nav-item add-btn-mobile" id="mobileAddBtn">
+                <div class="add-circle">
+                    <i class="fas fa-plus"></i>
+                </div>
+            </div>
+            <div class="mobile-nav-item" data-tab="budget">
+                <i class="fas fa-piggy-bank"></i>
+                <span>งบ</span>
+            </div>
+            <div class="mobile-nav-item" data-tab="settings">
+                <i class="fas fa-cog"></i>
+                <span>ตั้งค่า</span>
+            </div>
+        </nav>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Header -->
+            <header class="main-header">
+                <div class="header-left">
+                    <button id="menuToggle" class="menu-toggle">
+                        <i class="fas fa-bars"></i>
+                    </button>
+                    <h1 id="pageTitle">Dashboard</h1>
+                </div>
+                <div class="header-right">
+                    <div class="date-selector">
+                        <button id="prevMonth"><i class="fas fa-chevron-left"></i></button>
+                        <span id="currentMonthYear">มกราคม 2026</span>
+                        <button id="nextMonth"><i class="fas fa-chevron-right"></i></button>
+                    </div>
+                    <button id="addBtn" class="btn-add">
+                        <i class="fas fa-plus"></i>
+                        <span>เพิ่มรายการ</span>
+                    </button>
+                </div>
+            </header>
+
+            <!-- Tab Contents -->
+            <!-- Dashboard Tab -->
+            <section id="tab-dashboard" class="tab-content active">
+                <div class="dashboard-grid">
+                    <!-- Balance Cards -->
+                    <div class="card balance-card">
+                        <div class="balance-total">
+                            <span class="label">ยอดคงเหลือ</span>
+                            <h2 id="totalBalance">฿0.00</h2>
+                        </div>
+                        <div class="balance-row">
+                            <div class="balance-item income">
+                                <div class="icon"><i class="fas fa-arrow-down"></i></div>
+                                <div>
+                                    <span class="label">รายรับ</span>
+                                    <p id="totalIncome">฿0.00</p>
+                                </div>
+                            </div>
+                            <div class="balance-item expense">
+                                <div class="icon"><i class="fas fa-arrow-up"></i></div>
+                                <div>
+                                    <span class="label">รายจ่าย</span>
+                                    <p id="totalExpense">฿0.00</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Expense Chart -->
+                    <div class="card chart-card">
+                        <h3>สัดส่วนค่าใช้จ่าย</h3>
+                        <div class="chart-container">
+                            <canvas id="expenseChart"></canvas>
+                        </div>
+                        <div id="chartLegend" class="chart-legend"></div>
+                    </div>
+
+                    <!-- Budget Progress -->
+                    <div class="card budget-overview-card">
+                        <div class="card-header">
+                            <h3>งบประมาณเดือนนี้</h3>
+                            <a href="#" class="link" data-goto="budget">ดูทั้งหมด</a>
+                        </div>
+                        <div id="budgetOverview" class="budget-progress-list">
+                            <p class="empty-text">ยังไม่ได้ตั้งงบประมาณ</p>
+                        </div>
+                    </div>
+
+                    <!-- Recent Transactions -->
+                    <div class="card recent-transactions-card">
+                        <div class="card-header">
+                            <h3>รายการล่าสุด</h3>
+                            <a href="#" class="link" data-goto="transactions">ดูทั้งหมด</a>
+                        </div>
+                        <div id="recentTransactions" class="transaction-list">
+                            <div class="empty-state">
+                                <p>ยังไม่มีรายการ</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Transactions Tab -->
+            <section id="tab-transactions" class="tab-content">
+                <div class="transactions-page">
+                    <div class="filter-bar">
+                        <div class="search-box">
+                            <i class="fas fa-search"></i>
+                            <input type="text" id="searchInput" placeholder="ค้นหารายการ...">
+                        </div>
+                        <div class="filter-group">
+                            <select id="filterType">
+                                <option value="all">ทุกประเภท</option>
+                                <option value="income">รายรับ</option>
+                                <option value="expense">รายจ่าย</option>
+                            </select>
+                            <select id="filterCategory">
+                                <option value="all">ทุกหมวดหมู่</option>
+                            </select>
+                            <button id="exportCsv" class="btn-export">
+                                <i class="fas fa-download"></i> Export CSV
+                            </button>
+                        </div>
+                    </div>
+                    <div id="transactionList" class="transaction-list full-list">
+                        <div class="empty-state">
+                            <p>ยังไม่มีรายการ</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Budget Tab -->
+            <section id="tab-budget" class="tab-content">
+                <div class="budget-page">
+                    <div class="card">
+                        <div class="card-header">
+                            <h3>ตั้งงบประมาณรายเดือน</h3>
+                            <button id="addBudgetBtn" class="btn-small">
+                                <i class="fas fa-plus"></i> เพิ่มงบ
+                            </button>
+                        </div>
+                        <div id="budgetList" class="budget-list">
+                            <p class="empty-text">ยังไม่มีงบประมาณ คลิก "เพิ่มงบ" เพื่อเริ่มต้น</p>
+                        </div>
+                    </div>
+                    <div class="card">
+                        <h3>สรุปงบประมาณเดือนนี้</h3>
+                        <div id="budgetSummaryBars" class="budget-summary-bars">
+                            <p class="empty-text">ยังไม่มีงบประมาณ</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Reports Tab -->
+            <section id="tab-reports" class="tab-content">
+                <div class="reports-page">
+                    <div class="card">
+                        <h3>ภาพรวมทั้งปี</h3>
+                        <div class="year-selector">
+                            <button id="prevYear"><i class="fas fa-chevron-left"></i></button>
+                            <span id="currentYear">2026</span>
+                            <button id="nextYear"><i class="fas fa-chevron-right"></i></button>
+                        </div>
+                        <div class="chart-container yearly-chart">
+                            <canvas id="yearlyChart"></canvas>
+                        </div>
+                    </div>
+                    <div class="card">
+                        <h3>สรุปรายเดือน</h3>
+                        <div id="monthlyGrid" class="monthly-grid"></div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Settings Tab -->
+            <section id="tab-settings" class="tab-content">
+                <div class="settings-page">
+                    <div class="card">
+                        <h3><i class="fas fa-palette"></i> ธีม</h3>
+                        <div class="setting-row">
+                            <span>โหมดมืด</span>
+                            <label class="switch">
+                                <input type="checkbox" id="darkModeSwitch">
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+                    </div>
+                    <div class="card">
+                        <h3><i class="fas fa-tags"></i> หมวดหมู่ที่กำหนดเอง</h3>
+                        <div id="customCategoriesList" class="custom-categories"></div>
+                        <button id="addCategoryBtn" class="btn-small">
+                            <i class="fas fa-plus"></i> เพิ่มหมวดหมู่
+                        </button>
+                    </div>
+                    <div class="card">
+                        <h3><i class="fas fa-database"></i> ข้อมูล</h3>
+                        <p class="info-text">User ID: <code id="userIdDisplay"></code></p>
+                        <button id="exportAllBtn" class="btn-small">
+                            <i class="fas fa-file-export"></i> Export ทั้งหมด
+                        </button>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Add/Edit Transaction Modal -->
+    <div id="transactionModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="modalTitle">เพิ่มรายการใหม่</h2>
+                <button class="close-btn" onclick="closeAllModals()"><i class="fas fa-times"></i></button>
+            </div>
+
+            <div class="type-selector">
+                <input type="radio" id="typeExpense" name="type" value="expense" checked>
+                <label for="typeExpense" class="type-btn expense">
+                    <i class="fas fa-arrow-up"></i> รายจ่าย
+                </label>
+                <input type="radio" id="typeIncome" name="type" value="income">
+                <label for="typeIncome" class="type-btn income">
+                    <i class="fas fa-arrow-down"></i> รายรับ
+                </label>
+            </div>
+
+            <form id="transactionForm">
+                <input type="hidden" id="editTransactionId">
+                <div class="form-group">
+                    <label for="amount">จำนวนเงิน (บาท)</label>
+                    <div class="input-with-icon">
+                        <i class="fas fa-baht-sign"></i>
+                        <input type="number" id="amount" required placeholder="0.00" step="0.01" min="0">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>หมวดหมู่</label>
+                    <div class="category-grid" id="categoryGrid"></div>
+                    <input type="hidden" id="selectedCategory">
+                </div>
+                <div class="form-group">
+                    <label for="date">วันที่</label>
+                    <input type="date" id="date" required>
+                </div>
+                <div class="form-group">
+                    <label for="note">บันทึกช่วยจำ</label>
+                    <input type="text" id="note" placeholder="เช่น ค่าข้าวกลางวัน, เงินเดือน...">
+                </div>
+                <div class="form-actions">
+                    <button type="button" id="deleteTransactionBtn" class="btn-delete hidden"
+                        onclick="confirmDeleteTransaction()">
+                        <i class="fas fa-trash"></i> ลบ
+                    </button>
+                    <button type="submit" class="btn-submit">
+                        <i class="fas fa-check"></i> บันทึก
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Budget Modal -->
+    <div id="budgetModal" class="modal">
+        <div class="modal-content modal-small">
+            <div class="modal-header">
+                <h2>ตั้งงบประมาณ</h2>
+                <button class="close-btn" onclick="closeAllModals()"><i class="fas fa-times"></i></button>
+            </div>
+            <form id="budgetForm">
+                <input type="hidden" id="editBudgetId">
+                <div class="form-group">
+                    <label for="budgetCategory">หมวดหมู่</label>
+                    <select id="budgetCategory" required>
+                        <option value="">-- เลือกหมวดหมู่ --</option>
+                        <option value="_total">รวมทั้งหมด</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="budgetAmount">งบประมาณ (บาท/เดือน)</label>
+                    <input type="number" id="budgetAmount" required min="0" step="0.01" placeholder="0.00">
+                </div>
+                <div class="form-actions">
+                    <button type="button" id="deleteBudgetBtn" class="btn-delete hidden"
+                        onclick="confirmDeleteBudget()">ลบ</button>
+                    <button type="submit" class="btn-submit">บันทึก</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Category Modal -->
+    <div id="categoryModal" class="modal">
+        <div class="modal-content modal-small">
+            <div class="modal-header">
+                <h2>เพิ่มหมวดหมู่</h2>
+                <button class="close-btn" onclick="closeAllModals()"><i class="fas fa-times"></i></button>
+            </div>
+            <form id="categoryForm">
+                <div class="form-group">
+                    <label for="categoryType">ประเภท</label>
+                    <select id="categoryType" required>
+                        <option value="expense">รายจ่าย</option>
+                        <option value="income">รายรับ</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="categoryName">ชื่อหมวดหมู่</label>
+                    <input type="text" id="categoryName" required placeholder="เช่น ค่าเรียน">
+                </div>
+                <div class="form-group">
+                    <label>ไอคอน</label>
+                    <div class="icon-picker" id="iconPicker"></div>
+                    <input type="hidden" id="selectedIcon" value="fa-tag">
+                </div>
+                <div class="form-actions">
+                    <button type="submit" class="btn-submit">บันทึก</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Confirm Modal -->
+    <div id="confirmModal" class="modal">
+        <div class="modal-content modal-confirm">
+            <div class="confirm-icon"><i class="fas fa-exclamation-triangle"></i></div>
+            <h3 id="confirmTitle">ยืนยันการลบ?</h3>
+            <p id="confirmMessage">รายการนี้จะถูกลบถาวร</p>
+            <div class="confirm-actions">
+                <button id="confirmCancel" class="btn-cancel" onclick="closeAllModals()">ยกเลิก</button>
+                <button id="confirmOk" class="btn-danger">ลบ</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+
+</html>
